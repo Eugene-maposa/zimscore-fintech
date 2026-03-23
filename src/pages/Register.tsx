@@ -52,11 +52,13 @@ export default function Register() {
   const startCamera = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", width: 480, height: 480 },
+        video: { facingMode: "user", width: { ideal: 480 }, height: { ideal: 480 } },
+        audio: false,
       });
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        await videoRef.current.play();
       }
       setCameraActive(true);
     } catch {
@@ -72,12 +74,16 @@ export default function Register() {
 
   const capturePhoto = useCallback(() => {
     if (!videoRef.current || !canvasRef.current) return;
+    const video = videoRef.current;
     const canvas = canvasRef.current;
-    canvas.width = 480;
-    canvas.height = 480;
+    const size = Math.min(video.videoWidth || 480, video.videoHeight || 480);
+    canvas.width = size;
+    canvas.height = size;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    ctx.drawImage(videoRef.current, 0, 0, 480, 480);
+    const offsetX = (video.videoWidth - size) / 2;
+    const offsetY = (video.videoHeight - size) / 2;
+    ctx.drawImage(video, offsetX, offsetY, size, size, 0, 0, size, size);
     const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
     setPassportPhoto(dataUrl);
     stopCamera();
@@ -164,7 +170,9 @@ export default function Register() {
       });
       if (profileErr) throw profileErr;
 
-      toast.success("Account created! Please check your email to verify your account.");
+      toast.success("Account created successfully! You can now sign in.");
+      // Sign out so the user logs in fresh
+      await supabase.auth.signOut();
       navigate("/login");
     } catch (err: any) {
       toast.error(err.message || "Registration failed");
