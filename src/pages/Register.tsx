@@ -170,7 +170,9 @@ export default function Register() {
       });
       if (profileErr) throw profileErr;
 
-      toast.success("Account created! Please check your email to verify your account.");
+      toast.success("Account created successfully! You can now sign in.");
+      // Sign out so the user logs in fresh
+      await supabase.auth.signOut();
       navigate("/login");
     } catch (err: any) {
       toast.error(err.message || "Registration failed");
