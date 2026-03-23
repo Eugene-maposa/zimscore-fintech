@@ -74,12 +74,16 @@ export default function Register() {
 
   const capturePhoto = useCallback(() => {
     if (!videoRef.current || !canvasRef.current) return;
+    const video = videoRef.current;
     const canvas = canvasRef.current;
-    canvas.width = 480;
-    canvas.height = 480;
+    const size = Math.min(video.videoWidth || 480, video.videoHeight || 480);
+    canvas.width = size;
+    canvas.height = size;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    ctx.drawImage(videoRef.current, 0, 0, 480, 480);
+    const offsetX = (video.videoWidth - size) / 2;
+    const offsetY = (video.videoHeight - size) / 2;
+    ctx.drawImage(video, offsetX, offsetY, size, size, 0, 0, size, size);
     const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
     setPassportPhoto(dataUrl);
     stopCamera();
