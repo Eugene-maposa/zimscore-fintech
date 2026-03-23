@@ -52,11 +52,13 @@ export default function Register() {
   const startCamera = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", width: 480, height: 480 },
+        video: { facingMode: "user", width: { ideal: 480 }, height: { ideal: 480 } },
+        audio: false,
       });
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        await videoRef.current.play();
       }
       setCameraActive(true);
     } catch {
