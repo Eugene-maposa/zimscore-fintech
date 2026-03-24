@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Wallet, BarChart3, Users, Building2,
-  Rocket, Shield, LogOut, X, TrendingUp
+  Rocket, Shield, LogOut, X, TrendingUp, Bell, Landmark
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
