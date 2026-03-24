@@ -13,6 +13,8 @@ import Crowdfunding from "./pages/Crowdfunding";
 import AdminPortal from "./pages/AdminPortal";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import MFIMarketplace from "./pages/MFIMarketplace";
+import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
