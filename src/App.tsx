@@ -36,6 +36,8 @@ const App = () => (
           <Route path="/sme" element={<SMEHub />} />
           <Route path="/crowdfunding" element={<Crowdfunding />} />
           <Route path="/admin" element={<AdminPortal />} />
+          <Route path="/mfi" element={<MFIMarketplace />} />
+          <Route path="/notifications" element={<Notifications />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

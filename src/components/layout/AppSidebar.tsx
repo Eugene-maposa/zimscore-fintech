@@ -12,6 +12,8 @@ const navItems = [
   { label: "P2P Lending", icon: Users, path: "/p2p" },
   { label: "SME Hub", icon: Building2, path: "/sme" },
   { label: "Crowdfunding", icon: Rocket, path: "/crowdfunding" },
+  { label: "MFI Marketplace", icon: Landmark, path: "/mfi" },
+  { label: "Notifications", icon: Bell, path: "/notifications" },
   { label: "Admin", icon: Shield, path: "/admin" },
 ];
 
