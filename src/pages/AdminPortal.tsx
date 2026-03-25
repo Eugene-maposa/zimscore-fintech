@@ -28,6 +28,7 @@ interface Profile {
 }
 
 export default function AdminPortal() {
+  const { isAdmin } = useAuth();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewProfile, setViewProfile] = useState<Profile | null>(null);
@@ -36,6 +37,18 @@ export default function AdminPortal() {
   const [mainTab, setMainTab] = useState("overview");
 
   useEffect(() => { fetchProfiles(); }, []);
+
+  if (!isAdmin) {
+    return (
+      <AppLayout title="Admin Portal">
+        <div className="max-w-lg mx-auto mt-20 text-center space-y-4">
+          <ShieldAlert className="w-16 h-16 text-destructive mx-auto" />
+          <h2 className="font-display text-2xl font-bold">Access Denied</h2>
+          <p className="text-muted-foreground">You do not have admin privileges. Contact a system administrator to request access.</p>
+        </div>
+      </AppLayout>
+    );
+  }
 
   const fetchProfiles = async () => {
     setLoading(true);
