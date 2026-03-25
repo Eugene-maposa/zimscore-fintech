@@ -6,6 +6,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { CreditScoreGauge } from "@/components/dashboard/CreditScoreGauge";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { mockUser, transactions, formatCurrency, formatDate } from "@/lib/mock-data";
+import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
