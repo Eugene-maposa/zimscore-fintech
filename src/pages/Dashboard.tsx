@@ -63,7 +63,7 @@ export default function Dashboard() {
         {/* Welcome */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
           <div>
-            <h2 className="font-display text-2xl font-bold">Welcome back, {mockUser.name.split(" ")[0]} 👋</h2>
+            <h2 className="font-display text-2xl font-bold">Welcome back, {displayName.split(" ")[0]} 👋</h2>
             <p className="text-muted-foreground text-sm">Here's your financial overview</p>
           </div>
           <button
