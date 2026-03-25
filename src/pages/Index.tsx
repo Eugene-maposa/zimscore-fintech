@@ -63,8 +63,8 @@ export default function Index() {
               <Link to="/register" className="px-8 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 glow-primary transition-all flex items-center gap-2">
                 Start Free <ArrowRight className="w-4 h-4" />
               </Link>
-              <Link to="/dashboard" className="px-8 py-3 rounded-lg bg-secondary border border-border text-foreground font-semibold hover:bg-secondary/80 transition-colors">
-                View Demo
+              <Link to="/login" className="px-8 py-3 rounded-lg bg-secondary border border-border text-foreground font-semibold hover:bg-secondary/80 transition-colors">
+                Sign In
               </Link>
             </div>
           </motion.div>
