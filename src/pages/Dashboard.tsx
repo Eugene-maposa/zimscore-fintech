@@ -6,6 +6,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { CreditScoreGauge } from "@/components/dashboard/CreditScoreGauge";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { mockUser, transactions, formatCurrency, formatDate } from "@/lib/mock-data";
+import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,8 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 export default function Dashboard() {
+  const { profile, user } = useAuth();
+  const displayName = profile?.full_name || user?.user_metadata?.full_name || "User";
   const navigate = useNavigate();
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [actionDialog, setActionDialog] = useState<string | null>(null);
@@ -60,7 +63,7 @@ export default function Dashboard() {
         {/* Welcome */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
           <div>
-            <h2 className="font-display text-2xl font-bold">Welcome back, {mockUser.name.split(" ")[0]} 👋</h2>
+            <h2 className="font-display text-2xl font-bold">Welcome back, {displayName.split(" ")[0]} 👋</h2>
             <p className="text-muted-foreground text-sm">Here's your financial overview</p>
           </div>
           <button

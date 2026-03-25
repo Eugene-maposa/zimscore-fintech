@@ -3,6 +3,8 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import WalletPage from "./pages/WalletPage";
@@ -21,27 +23,29 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/wallet" element={<WalletPage />} />
-          <Route path="/score" element={<ScorePage />} />
-          <Route path="/p2p" element={<P2PLending />} />
-          <Route path="/sme" element={<SMEHub />} />
-          <Route path="/crowdfunding" element={<Crowdfunding />} />
-          <Route path="/admin" element={<AdminPortal />} />
-          <Route path="/mfi" element={<MFIMarketplace />} />
-          <Route path="/notifications" element={<Notifications />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/wallet" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
+            <Route path="/score" element={<ProtectedRoute><ScorePage /></ProtectedRoute>} />
+            <Route path="/p2p" element={<ProtectedRoute><P2PLending /></ProtectedRoute>} />
+            <Route path="/sme" element={<ProtectedRoute><SMEHub /></ProtectedRoute>} />
+            <Route path="/crowdfunding" element={<ProtectedRoute><Crowdfunding /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute><AdminPortal /></ProtectedRoute>} />
+            <Route path="/mfi" element={<ProtectedRoute><MFIMarketplace /></ProtectedRoute>} />
+            <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 
