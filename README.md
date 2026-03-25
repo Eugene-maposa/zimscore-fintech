@@ -1,3 +1,3 @@
-# Welcome to your Lovable project
+# ZimScore Fintech
 
 TODO: Document your project here
