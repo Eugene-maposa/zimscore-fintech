@@ -1,6 +1,16 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Shield, Users, DollarSign, Activity, CheckCircle, XCircle, Eye, Loader2, AlertTriangle, BarChart3, TrendingUp, Ban, FileText, Download } from "lucide-react";
+import { Shield, Users, DollarSign, Activity, CheckCircle, XCircle, Eye, Loader2, AlertTriangle, BarChart3, TrendingUp, Ban, FileText, Download, ShieldAlert } from "lucide-react";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { StatCard } from "@/components/dashboard/StatCard";
+import { adminStats, formatCurrency } from "@/lib/mock-data";
+import { supabase } from "@/integrations/supabase/client";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { toast } from "sonner";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid } from "recharts";
+import { useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { adminStats, formatCurrency } from "@/lib/mock-data";
