@@ -96,6 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSession(null);
     setUser(null);
     setProfile(null);
+    setIsAdmin(false);
   };
 
   return (
