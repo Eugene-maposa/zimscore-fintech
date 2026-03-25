@@ -14,6 +14,8 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 export default function Dashboard() {
+  const { profile, user } = useAuth();
+  const displayName = profile?.full_name || user?.user_metadata?.full_name || "User";
   const navigate = useNavigate();
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [actionDialog, setActionDialog] = useState<string | null>(null);
