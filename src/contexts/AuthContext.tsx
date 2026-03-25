@@ -37,6 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
@@ -45,6 +46,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq("user_id", userId)
       .maybeSingle();
     setProfile(data);
+  };
+
+  const checkAdminRole = async (userId: string) => {
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    setIsAdmin(!!data);
   };
 
   useEffect(() => {
