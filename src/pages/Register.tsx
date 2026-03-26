@@ -158,6 +158,9 @@ export default function Register() {
     }
     if (s === 2) {
       if (!idFront || !idBack) { toast.error("Please upload both sides of your national ID"); return false; }
+      if (verifyingFront || verifyingBack) { toast.error("Please wait for ID verification to complete"); return false; }
+      if (idFrontVerified === false) { toast.error("The front of your ID was not recognized as a valid Zimbabwean National ID. Please re-upload."); return false; }
+      if (idBackVerified === false) { toast.error("The back of your ID was not recognized as a valid Zimbabwean National ID. Please re-upload."); return false; }
       return true;
     }
     if (s === 3) {
@@ -301,16 +304,26 @@ export default function Register() {
             {/* STEP 2: National ID */}
             {step === 2 && (
               <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
-                <p className="text-sm text-muted-foreground">Upload clear images of the front and back of your National ID for verification.</p>
+                <p className="text-sm text-muted-foreground">Upload clear images of the front and back of your <strong>Zimbabwean National ID</strong>. Our AI will verify the documents automatically.</p>
 
                 {/* Front */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">ID Front Side</label>
-                  <label className="flex flex-col items-center justify-center border-2 border-dashed border-border rounded-lg p-4 cursor-pointer hover:border-primary transition-colors bg-secondary/50 min-h-[140px]">
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    ID Front Side
+                    {verifyingFront && <Loader2 className="w-3 h-3 animate-spin text-primary" />}
+                    {idFrontVerified === true && <ShieldCheck className="w-4 h-4 text-emerald-500" />}
+                    {idFrontVerified === false && <AlertTriangle className="w-4 h-4 text-destructive" />}
+                  </label>
+                  <label className={`flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-4 cursor-pointer transition-colors bg-secondary/50 min-h-[140px] ${idFrontVerified === false ? "border-destructive" : idFrontVerified === true ? "border-emerald-500" : "border-border hover:border-primary"}`}>
                     {idFrontPreview ? (
                       <div className="relative w-full">
                         <img src={idFrontPreview} alt="ID Front" className="w-full h-32 object-cover rounded-md" />
-                        <button type="button" onClick={(e) => { e.preventDefault(); setIdFront(null); setIdFrontPreview(null); }} className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1">
+                        {verifyingFront && (
+                          <div className="absolute inset-0 bg-background/60 flex items-center justify-center rounded-md">
+                            <div className="flex items-center gap-2 text-sm"><Loader2 className="w-4 h-4 animate-spin" /> Verifying...</div>
+                          </div>
+                        )}
+                        <button type="button" onClick={(e) => { e.preventDefault(); setIdFront(null); setIdFrontPreview(null); setIdFrontVerified(null); }} className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1">
                           <X className="w-3 h-3" />
                         </button>
                       </div>
@@ -323,16 +336,29 @@ export default function Register() {
                     )}
                     <input type="file" accept="image/*" className="hidden" onChange={handleFileSelect("front")} />
                   </label>
+                  {idFrontVerified === false && (
+                    <p className="text-xs text-destructive flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Not recognized as a Zimbabwean National ID. Please upload the correct document.</p>
+                  )}
                 </div>
 
                 {/* Back */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">ID Back Side</label>
-                  <label className="flex flex-col items-center justify-center border-2 border-dashed border-border rounded-lg p-4 cursor-pointer hover:border-primary transition-colors bg-secondary/50 min-h-[140px]">
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    ID Back Side
+                    {verifyingBack && <Loader2 className="w-3 h-3 animate-spin text-primary" />}
+                    {idBackVerified === true && <ShieldCheck className="w-4 h-4 text-emerald-500" />}
+                    {idBackVerified === false && <AlertTriangle className="w-4 h-4 text-destructive" />}
+                  </label>
+                  <label className={`flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-4 cursor-pointer transition-colors bg-secondary/50 min-h-[140px] ${idBackVerified === false ? "border-destructive" : idBackVerified === true ? "border-emerald-500" : "border-border hover:border-primary"}`}>
                     {idBackPreview ? (
                       <div className="relative w-full">
                         <img src={idBackPreview} alt="ID Back" className="w-full h-32 object-cover rounded-md" />
-                        <button type="button" onClick={(e) => { e.preventDefault(); setIdBack(null); setIdBackPreview(null); }} className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1">
+                        {verifyingBack && (
+                          <div className="absolute inset-0 bg-background/60 flex items-center justify-center rounded-md">
+                            <div className="flex items-center gap-2 text-sm"><Loader2 className="w-4 h-4 animate-spin" /> Verifying...</div>
+                          </div>
+                        )}
+                        <button type="button" onClick={(e) => { e.preventDefault(); setIdBack(null); setIdBackPreview(null); setIdBackVerified(null); }} className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1">
                           <X className="w-3 h-3" />
                         </button>
                       </div>
@@ -345,6 +371,9 @@ export default function Register() {
                     )}
                     <input type="file" accept="image/*" className="hidden" onChange={handleFileSelect("back")} />
                   </label>
+                  {idBackVerified === false && (
+                    <p className="text-xs text-destructive flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Not recognized as a Zimbabwean National ID. Please upload the correct document.</p>
+                  )}
                 </div>
               </motion.div>
             )}
