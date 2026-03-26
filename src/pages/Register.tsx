@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { TrendingUp, Mail, Lock, User, Eye, EyeOff, Upload, Camera, ChevronRight, ChevronLeft, Check, X, Loader2 } from "lucide-react";
+import { TrendingUp, Mail, Lock, User, Eye, EyeOff, Upload, Camera, ChevronRight, ChevronLeft, Check, X, Loader2, ShieldCheck, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,10 @@ export default function Register() {
   const [idBack, setIdBack] = useState<File | null>(null);
   const [idFrontPreview, setIdFrontPreview] = useState<string | null>(null);
   const [idBackPreview, setIdBackPreview] = useState<string | null>(null);
+  const [idFrontVerified, setIdFrontVerified] = useState<boolean | null>(null);
+  const [idBackVerified, setIdBackVerified] = useState<boolean | null>(null);
+  const [verifyingFront, setVerifyingFront] = useState(false);
+  const [verifyingBack, setVerifyingBack] = useState(false);
 
   // Step 3: Passport photo (camera)
   const [passportPhoto, setPassportPhoto] = useState<string | null>(null);
