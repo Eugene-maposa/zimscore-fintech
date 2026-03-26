@@ -36,7 +36,31 @@ export default function Register() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  const handleFileSelect = (type: "front" | "back") => (e: React.ChangeEvent<HTMLInputElement>) => {
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const verifyIdDocument = async (file: File, side: "front" | "back"): Promise<{ valid: boolean; reason: string }> => {
+    try {
+      const base64 = await fileToBase64(file);
+      const { data, error } = await supabase.functions.invoke("verify-id-document", {
+        body: { imageBase64: base64, side },
+      });
+      if (error) throw error;
+      return { valid: data.valid, reason: data.reason || "" };
+    } catch (err) {
+      console.error("ID verification error:", err);
+      // Don't block on verification failure
+      return { valid: true, reason: "Verification unavailable" };
+    }
+  };
+
+  const handleFileSelect = (type: "front" | "back") => async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
@@ -44,12 +68,35 @@ export default function Register() {
       return;
     }
     const url = URL.createObjectURL(file);
+
     if (type === "front") {
       setIdFront(file);
       setIdFrontPreview(url);
+      setIdFrontVerified(null);
+      setVerifyingFront(true);
+      const result = await verifyIdDocument(file, "front");
+      setVerifyingFront(false);
+      if (!result.valid) {
+        toast.error(`This does not appear to be the front of a Zimbabwean National ID. ${result.reason}`);
+        setIdFrontVerified(false);
+      } else {
+        setIdFrontVerified(true);
+        toast.success("ID front side verified ✓");
+      }
     } else {
       setIdBack(file);
       setIdBackPreview(url);
+      setIdBackVerified(null);
+      setVerifyingBack(true);
+      const result = await verifyIdDocument(file, "back");
+      setVerifyingBack(false);
+      if (!result.valid) {
+        toast.error(`This does not appear to be the back of a Zimbabwean National ID. ${result.reason}`);
+        setIdBackVerified(false);
+      } else {
+        setIdBackVerified(true);
+        toast.success("ID back side verified ✓");
+      }
     }
   };
 
