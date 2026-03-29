@@ -30,6 +30,7 @@ export default function WalletPage() {
   const [lowBalanceThreshold, setLowBalanceThreshold] = useState<number | null>(null);
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertAmount, setAlertAmount] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const filtered = transactions.filter((t) => {
     const matchesType = filter === "all" || t.type === filter;
@@ -64,6 +65,46 @@ export default function WalletPage() {
     setDepositOpen(false); setAmount(""); setAccountRef("");
   };
 
+  const handleEcoCashDeposit = async () => {
+    if (walletFrozen) { toast.error("Wallet is frozen."); return; }
+    const amt = Number(amount);
+    if (!amt || amt <= 0) { toast.error("Enter a valid amount"); return; }
+    if (!accountRef.trim()) { toast.error("Enter your EcoCash phone number"); return; }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/ecocash/deposit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mobile_number: accountRef, amount: amt }),
+      });
+      const data = await response.json();
+      
+      if (data.status === "Success" || data.transaction_id) {
+        toast.success(data.message || "EcoCash push sent! Please confirm on your phone.");
+        // We'll update balance locally for demo, ideally we wait for webhook
+        setBalance(prev => prev + amt);
+        const newTx: Transaction = {
+          id: data.transaction_id || String(Date.now()),
+          type: "credit",
+          description: "EcoCash Deposit",
+          amount: amt,
+          date: new Date().toISOString().split("T")[0],
+          category: "Deposit",
+          reference: data.client_correlator || `DEP-${Date.now().toString(36).toUpperCase()}`,
+        };
+        setTransactions(prev => [newTx, ...prev]);
+        setDepositOpen(false); setAmount(""); setAccountRef("");
+      } else {
+        toast.error(data.message || "EcoCash transaction failed");
+      }
+    } catch (error) {
+      toast.error("Failed to connect to payment server");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleWithdraw = () => {
     if (walletFrozen) { toast.error("Wallet is frozen. Unfreeze to make transactions."); return; }
     const amt = Number(amount);
@@ -94,6 +135,53 @@ export default function WalletPage() {
     setTransactions(prev => [feeTx, newTx, ...prev]);
     toast.success(`${formatCurrency(amt)} withdrawn successfully`);
     setWithdrawOpen(false); setAmount(""); setAccountRef("");
+  };
+
+  const handleEcoCashWithdraw = async () => {
+    if (walletFrozen) { toast.error("Wallet is frozen."); return; }
+    const amt = Number(amount);
+    if (!amt || amt <= 0) { toast.error("Enter a valid amount"); return; }
+    if (amt > balance) { toast.error("Insufficient balance"); return; }
+    if (!accountRef.trim()) { toast.error("Enter recipient EcoCash number"); return; }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/ecocash/withdraw", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mobile_number: accountRef, amount: amt }),
+      });
+      const data = await response.json();
+
+      if (data.status === "Success" || data.transaction_id) {
+        setBalance(prev => prev - amt);
+        const fee = amt * 0.01;
+        const feeTx: Transaction = {
+          id: String(Date.now() + 1), type: "debit",
+          description: "Withdrawal Fee", amount: fee,
+          date: new Date().toISOString().split("T")[0], category: "Fee",
+          reference: `FEE-${Date.now().toString(36).toUpperCase()}`,
+        };
+        const newTx: Transaction = {
+          id: data.transaction_id || String(Date.now()),
+          type: "debit",
+          description: "EcoCash Withdrawal",
+          amount: amt,
+          date: new Date().toISOString().split("T")[0],
+          category: "Withdrawal",
+          reference: data.client_correlator || `WTH-${Date.now().toString(36).toUpperCase()}`,
+        };
+        setTransactions(prev => [feeTx, newTx, ...prev]);
+        toast.success(data.message || "Withdrawal successful");
+        setWithdrawOpen(false); setAmount(""); setAccountRef("");
+      } else {
+        toast.error(data.message || "EcoCash transaction failed");
+      }
+    } catch (error) {
+      toast.error("Failed to connect to payment server");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const toggleFreeze = () => {
@@ -259,6 +347,12 @@ export default function WalletPage() {
                 {quickAmounts.map(qa => <button key={qa} onClick={() => setAmount(String(qa))} className="px-3 py-1 rounded-full text-xs bg-secondary border border-border hover:border-primary/30 transition-colors">${qa}</button>)}
               </div>
             </div>
+            {method === "ecocash" && (
+              <div className="space-y-2">
+                <Label>EcoCash Number</Label>
+                <Input placeholder="077X XXX XXXX" value={accountRef} onChange={e => setAccountRef(e.target.value)} />
+              </div>
+            )}
             {amount && Number(amount) > 0 && (
               <div className="p-3 rounded-lg bg-success/5 border border-success/20 text-sm">
                 New balance: <span className="text-success font-bold">{formatCurrency(balance + Number(amount))}</span>
@@ -267,7 +361,13 @@ export default function WalletPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDepositOpen(false)}>Cancel</Button>
-            <Button onClick={handleDeposit} className="glow-primary">Deposit {amount ? formatCurrency(Number(amount)) : ""}</Button>
+            <Button 
+              onClick={method === "ecocash" ? handleEcoCashDeposit : handleDeposit} 
+              className="glow-primary"
+              disabled={isLoading}
+            >
+              {isLoading ? "Processing..." : `Deposit ${amount ? formatCurrency(Number(amount)) : ""}`}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -297,7 +397,13 @@ export default function WalletPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setWithdrawOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleWithdraw}>Withdraw</Button>
+            <Button 
+              variant="destructive" 
+              onClick={method === "ecocash" ? handleEcoCashWithdraw : handleWithdraw}
+              disabled={isLoading}
+            >
+              {isLoading ? "Processing..." : "Withdraw"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

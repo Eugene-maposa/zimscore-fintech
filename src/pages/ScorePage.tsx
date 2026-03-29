@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -27,6 +27,51 @@ export default function ScorePage() {
   const [monthlyExpenses, setMonthlyExpenses] = useState("");
   const [monthlySavings, setMonthlySavings] = useState("");
 
+  const [apiScore, setApiScore] = useState<number | null>(null);
+  const [apiBand, setApiBand] = useState<string | null>(null);
+  const [apiConfidence, setApiConfidence] = useState<number | null>(null);
+  const [apiBreakdown, setApiBreakdown] = useState<any[] | null>(null);
+  const [isLoadingScore, setIsLoadingScore] = useState(true);
+
+  useEffect(() => {
+    const fetchScore = async () => {
+      try {
+        const res = await fetch("/api/calculate-score", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            weekly_data: [
+              { week_number: 1, income: 150, expenses: 45, ending_balance: 165 },
+              { week_number: 2, income: 120, expenses: 30, ending_balance: 90 },
+              { week_number: 3, income: 130, expenses: 53, ending_balance: 210 },
+              { week_number: 4, income: 145, expenses: 45, ending_balance: 122 }
+            ],
+            bill_payments: [
+              { bill_name: "ZESA", expected_date: "22 Jan", actual_date: "22 Jan", on_time: true },
+              { bill_name: "Rent", expected_date: "31 Jan", actual_date: "31 Jan", on_time: true }
+            ],
+            months_of_data: 3
+          })
+        });
+        const data = await res.json();
+        setApiScore(data.final_zimscore);
+        setApiBand(data.band);
+        setApiConfidence(data.confidence);
+        setApiBreakdown([
+          { label: "Income Stability", score: data.income_stability_score, weight: 35, color: "hsl(160, 84%, 39%)" },
+          { label: "Expense Ratio", score: data.expense_ratio_score, weight: 30, color: "hsl(224, 76%, 48%)" },
+          { label: "Payment History", score: data.payment_history_score, weight: 20, color: "hsl(45, 93%, 58%)" },
+          { label: "Savings Behaviour", score: data.savings_behaviour_score, weight: 15, color: "hsl(280, 70%, 55%)" }
+        ]);
+      } catch (err) {
+        console.error("Failed to fetch score from API", err);
+      } finally {
+        setIsLoadingScore(false);
+      }
+    };
+    fetchScore();
+  }, []);
+
   const handleFileUpload = (docType: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -54,9 +99,11 @@ export default function ScorePage() {
     setMonthlyIncome(""); setMonthlyExpenses(""); setMonthlySavings("");
   };
 
-  const zimScore = mockUser.creditScore;
-  const band = zimScore >= 750 ? "Excellent" : zimScore >= 650 ? "Good" : zimScore >= 550 ? "Fair" : zimScore >= 400 ? "Poor" : "Very Poor";
+  const zimScore = apiScore ?? mockUser.creditScore;
+  const band = apiBand ?? (zimScore >= 750 ? "Excellent" : zimScore >= 650 ? "Good" : zimScore >= 550 ? "Fair" : zimScore >= 400 ? "Poor" : "Very Poor");
   const bandColor = zimScore >= 750 ? "text-success" : zimScore >= 650 ? "text-primary" : zimScore >= 550 ? "text-accent" : "text-destructive";
+  const confidence = apiConfidence ?? scoreConfidence;
+  const breakdownSource = apiBreakdown ?? creditBreakdown;
 
   return (
     <AppLayout title="Credit Score">
@@ -81,7 +128,14 @@ export default function ScorePage() {
           {/* Gauge + Confidence */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6 flex flex-col items-center">
             <h3 className="font-display text-lg font-semibold mb-4">Your Credit Score</h3>
-            <CreditScoreGauge score={mockUser.creditScore} maxScore={mockUser.maxScore} />
+            {isLoadingScore ? (
+              <div className="flex flex-col items-center justify-center h-[200px] w-[200px]">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                <p className="mt-4 text-sm text-muted-foreground animate-pulse">Calculating via AI Model...</p>
+              </div>
+            ) : (
+              <>
+                <CreditScoreGauge score={zimScore} maxScore={mockUser.maxScore} />
             <div className="flex items-center gap-2 mt-3">
               <span className={`font-display font-bold text-lg ${bandColor}`}>{band}</span>
               <div className="group relative">
@@ -103,13 +157,17 @@ export default function ScorePage() {
                     </div>
                   </div>
                 </span>
-                <span className="font-bold">{scoreConfidence}%</span>
+                <span className="font-bold">{confidence}%</span>
               </div>
               <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                <motion.div className="h-full rounded-full bg-primary" initial={{ width: 0 }} animate={{ width: `${scoreConfidence}%` }} transition={{ duration: 1 }} />
+                <motion.div className="h-full rounded-full bg-primary" initial={{ width: 0 }} animate={{ width: `${confidence}%` }} transition={{ duration: 1 }} />
               </div>
             </div>
-            <p className="text-center text-xs text-muted-foreground mt-2">Model: Phase 1 (Rule-Based) · Last updated: {formatDate("2024-01-15")}</p>
+            <p className="text-center text-xs text-muted-foreground mt-2">
+              Model: {apiScore !== null ? "Live Python API Integration" : "Phase 1 (Rule-Based Mock)"} · Last updated: {formatDate(new Date().toISOString())}
+            </p>
+            </>
+            )}
           </motion.div>
 
           {/* Score History with annotations */}
@@ -153,29 +211,33 @@ export default function ScorePage() {
             <span className="text-xs text-muted-foreground px-2 py-1 rounded bg-secondary border border-border">Phase 1 Formula</span>
           </div>
           <div className="space-y-4">
-            {creditBreakdown.map((item) => (
-              <div key={item.label} className="space-y-1">
-                <div className="flex justify-between text-sm">
-                  <span className="flex items-center gap-1">
-                    {item.label}
-                    <span className="text-muted-foreground">({item.weight}%)</span>
-                    <div className="group relative inline-block">
-                      <Info className="w-3 h-3 text-muted-foreground cursor-help" />
-                      <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-popover border border-border rounded-lg text-xs w-48 hidden group-hover:block z-10">
-                        {item.label === "Income Stability" && "How consistent your monthly income is over time."}
-                        {item.label === "Expense Ratio" && "The percentage of your income that you spend each month."}
-                        {item.label === "Payment History" && "Your track record of paying bills and loans on time."}
-                        {item.label === "Savings Behaviour" && "How much you save relative to your income each month."}
+            {isLoadingScore ? (
+              <div className="h-32 flex items-center justify-center text-muted-foreground animate-pulse">Loading breakdown from Python Backend...</div>
+            ) : (
+              breakdownSource.map((item) => (
+                <div key={item.label} className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="flex items-center gap-1">
+                      {item.label}
+                      <span className="text-muted-foreground">({item.weight}%)</span>
+                      <div className="group relative inline-block">
+                        <Info className="w-3 h-3 text-muted-foreground cursor-help" />
+                        <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-popover border border-border rounded-lg text-xs w-48 hidden group-hover:block z-10">
+                          {item.label === "Income Stability" && "How consistent your monthly income is over time."}
+                          {item.label === "Expense Ratio" && "The percentage of your income that you spend each month."}
+                          {item.label === "Payment History" && "Your track record of paying bills and loans on time."}
+                          {item.label === "Savings Behaviour" && "How much you save relative to your income each month."}
+                        </div>
                       </div>
-                    </div>
-                  </span>
-                  <span className="font-semibold">{item.score}/100</span>
+                    </span>
+                    <span className="font-semibold">{item.score}/100</span>
+                  </div>
+                  <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                    <motion.div className="h-full rounded-full" style={{ background: item.color }} initial={{ width: 0 }} animate={{ width: `${item.score}%` }} transition={{ duration: 1.5 }} />
+                  </div>
                 </div>
-                <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                  <motion.div className="h-full rounded-full" style={{ background: item.color }} initial={{ width: 0 }} animate={{ width: `${item.score}%` }} transition={{ duration: 1.5 }} />
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </motion.div>
 
