@@ -98,3 +98,7 @@ def ecocash_withdraw(request: EcoCashRequest):
 @app.get("/api/ecocash/status/{client_correlator}")
 def ecocash_status(client_correlator: str):
     return ecocash.check_status(client_correlator)
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
