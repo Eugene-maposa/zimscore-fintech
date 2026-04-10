@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Wallet, BarChart3, Users, Building2,
-  Rocket, Shield, LogOut, X, TrendingUp, Bell, Landmark
+  Rocket, Shield, LogOut, X, TrendingUp, Bell, Landmark, Smartphone
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,6 +14,7 @@ const navItems = [
   { label: "SME Hub", icon: Building2, path: "/sme" },
   { label: "Crowdfunding", icon: Rocket, path: "/crowdfunding" },
   { label: "MFI Marketplace", icon: Landmark, path: "/mfi" },
+  { label: "EcoCash Upload", icon: Smartphone, path: "/ecocash-upload" },
   { label: "Notifications", icon: Bell, path: "/notifications" },
   { label: "Admin", icon: Shield, path: "/admin" },
 ];

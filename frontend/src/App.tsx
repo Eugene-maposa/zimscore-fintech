@@ -18,6 +18,7 @@ import Register from "./pages/Register";
 import MFIMarketplace from "./pages/MFIMarketplace";
 import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
+import EcoCashUpload from "./pages/EcoCashUpload";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,7 @@ const App = () => (
             <Route path="/admin" element={<ProtectedRoute><AdminPortal /></ProtectedRoute>} />
             <Route path="/mfi" element={<ProtectedRoute><MFIMarketplace /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+            <Route path="/ecocash-upload" element={<ProtectedRoute><EcoCashUpload /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
