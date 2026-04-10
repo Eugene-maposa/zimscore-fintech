@@ -42,6 +42,7 @@ const App = () => (
             <Route path="/admin" element={<ProtectedRoute><AdminPortal /></ProtectedRoute>} />
             <Route path="/mfi" element={<ProtectedRoute><MFIMarketplace /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+            <Route path="/ecocash-upload" element={<ProtectedRoute><EcoCashUpload /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
