@@ -109,6 +109,15 @@ export default function Register() {
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        // Wait for video metadata to load so dimensions are available
+        await new Promise<void>((resolve) => {
+          const video = videoRef.current!;
+          if (video.readyState >= 2) {
+            resolve();
+          } else {
+            video.onloadeddata = () => resolve();
+          }
+        });
         await videoRef.current.play();
       }
       setCameraActive(true);
