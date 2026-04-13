@@ -108,7 +108,7 @@ export default function Dashboard() {
             <StatCard title="Wallet Balance" value={balanceVisible ? formatCurrency(mockUser.walletBalance) : "••••••"} icon={Wallet} trend={{ value: "12% this month", positive: true }} />
           </div>
           <div className="cursor-pointer" onClick={() => navigate("/score")}>
-            <StatCard title="Credit Score" value={String(mockUser.creditScore)} subtitle="Excellent" icon={BarChart3} trend={{ value: "+12 pts", positive: true }} />
+            <StatCard title="Credit Score" value={String(realScore)} subtitle={realScore === 0 ? "No Data" : realScore >= 750 ? "Excellent" : realScore >= 650 ? "Very Good" : realScore >= 500 ? "Good" : "Fair"} icon={BarChart3} trend={verifiedCount > 0 ? { value: `${verifiedCount} doc${verifiedCount !== 1 ? "s" : ""} verified`, positive: true } : { value: "Upload documents", positive: false }} />
           </div>
           <div className="cursor-pointer" onClick={() => navigate("/p2p")}>
             <StatCard title="Active Loans" value="3" subtitle={balanceVisible ? "$2,800 outstanding" : "••••••"} icon={Users} />
