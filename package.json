@@ -2,10 +2,10 @@
   "name": "zimscore",
   "private": true,
   "scripts": {
-    "dev": "cd frontend && npm run dev",
-    "build": "cd frontend && npm run build",
-    "build:dev": "cd frontend && npm run build:dev",
-    "preview": "cd frontend && npm run preview",
-    "test": "cd frontend && npm run test"
+    "dev": "cd frontend && npx vite",
+    "build": "cd frontend && npx vite build",
+    "build:dev": "cd frontend && npx vite build --mode development",
+    "preview": "cd frontend && npx vite preview",
+    "test": "cd frontend && npx vitest run"
   }
 }
