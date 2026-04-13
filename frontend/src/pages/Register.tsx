@@ -136,13 +136,19 @@ export default function Register() {
     if (!videoRef.current || !canvasRef.current) return;
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    const size = Math.min(video.videoWidth || 480, video.videoHeight || 480);
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    if (!vw || !vh) {
+      toast.error("Camera not ready yet. Please wait a moment and try again.");
+      return;
+    }
+    const size = Math.min(vw, vh);
     canvas.width = size;
     canvas.height = size;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const offsetX = (video.videoWidth - size) / 2;
-    const offsetY = (video.videoHeight - size) / 2;
+    const offsetX = (vw - size) / 2;
+    const offsetY = (vh - size) / 2;
     ctx.drawImage(video, offsetX, offsetY, size, size, 0, 0, size, size);
     const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
     setPassportPhoto(dataUrl);
