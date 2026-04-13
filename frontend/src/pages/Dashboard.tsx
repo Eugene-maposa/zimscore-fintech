@@ -126,8 +126,11 @@ export default function Dashboard() {
             onClick={() => navigate("/score")}
           >
             <h3 className="font-display text-lg font-semibold mb-4">Credit Score</h3>
-            <CreditScoreGauge score={mockUser.creditScore} maxScore={mockUser.maxScore} />
-            <p className="text-center text-sm text-muted-foreground mt-3">Last updated: Jan 15, 2024</p>
+            <CreditScoreGauge score={realScore} maxScore={850} />
+            <p className="text-center text-sm text-muted-foreground mt-3">
+              {verifiedCount === 0 ? "Upload documents to build your score" : `Based on ${verifiedCount} verified document${verifiedCount !== 1 ? "s" : ""}`}
+            </p>
+            <p className="text-center text-xs text-muted-foreground mt-1">Max loan: ${maxLoan}</p>
           </motion.div>
 
           {/* Quick Actions */}
