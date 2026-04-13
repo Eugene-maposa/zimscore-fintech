@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Wallet, BarChart3, ArrowUpRight, ArrowDownLeft, Send, CreditCard, Users, TrendingUp, Eye, EyeOff } from "lucide-react";
@@ -7,6 +7,7 @@ import { CreditScoreGauge } from "@/components/dashboard/CreditScoreGauge";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { mockUser, transactions, formatCurrency, formatDate } from "@/lib/mock-data";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
