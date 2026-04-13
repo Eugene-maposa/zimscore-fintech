@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Wallet, BarChart3, ArrowUpRight, ArrowDownLeft, Send, CreditCard, Users, TrendingUp, Eye, EyeOff } from "lucide-react";
@@ -7,6 +7,7 @@ import { CreditScoreGauge } from "@/components/dashboard/CreditScoreGauge";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { mockUser, transactions, formatCurrency, formatDate } from "@/lib/mock-data";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,32 @@ export default function Dashboard() {
   const [actionAmount, setActionAmount] = useState("");
   const [actionRecipient, setActionRecipient] = useState("");
   const [activityTab, setActivityTab] = useState("all");
+  const [verifiedCount, setVerifiedCount] = useState(0);
+  const [realScore, setRealScore] = useState(0);
+  const [maxLoan, setMaxLoan] = useState(20);
+
+  useEffect(() => {
+    const fetchDocs = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from("ecocash_statements")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("verification_status", "verified");
+      const count = data?.length ?? 0;
+      setVerifiedCount(count);
+      // Simple score: 0 if no docs
+      if (count === 0) {
+        setRealScore(0);
+        setMaxLoan(20);
+      } else {
+        const score = Math.min(850, count * 150 + 200);
+        setRealScore(score);
+        setMaxLoan(score < 300 ? 50 : score < 500 ? 200 : score < 650 ? 500 : score < 750 ? 1500 : 5000);
+      }
+    };
+    fetchDocs();
+  }, [user]);
 
   const filteredTransactions = activityTab === "all"
     ? transactions
@@ -81,7 +108,7 @@ export default function Dashboard() {
             <StatCard title="Wallet Balance" value={balanceVisible ? formatCurrency(mockUser.walletBalance) : "••••••"} icon={Wallet} trend={{ value: "12% this month", positive: true }} />
           </div>
           <div className="cursor-pointer" onClick={() => navigate("/score")}>
-            <StatCard title="Credit Score" value={String(mockUser.creditScore)} subtitle="Excellent" icon={BarChart3} trend={{ value: "+12 pts", positive: true }} />
+            <StatCard title="Credit Score" value={String(realScore)} subtitle={realScore === 0 ? "No Data" : realScore >= 750 ? "Excellent" : realScore >= 650 ? "Very Good" : realScore >= 500 ? "Good" : "Fair"} icon={BarChart3} trend={verifiedCount > 0 ? { value: `${verifiedCount} doc${verifiedCount !== 1 ? "s" : ""} verified`, positive: true } : { value: "Upload documents", positive: false }} />
           </div>
           <div className="cursor-pointer" onClick={() => navigate("/p2p")}>
             <StatCard title="Active Loans" value="3" subtitle={balanceVisible ? "$2,800 outstanding" : "••••••"} icon={Users} />
@@ -99,8 +126,11 @@ export default function Dashboard() {
             onClick={() => navigate("/score")}
           >
             <h3 className="font-display text-lg font-semibold mb-4">Credit Score</h3>
-            <CreditScoreGauge score={mockUser.creditScore} maxScore={mockUser.maxScore} />
-            <p className="text-center text-sm text-muted-foreground mt-3">Last updated: Jan 15, 2024</p>
+            <CreditScoreGauge score={realScore} maxScore={850} />
+            <p className="text-center text-sm text-muted-foreground mt-3">
+              {verifiedCount === 0 ? "Upload documents to build your score" : `Based on ${verifiedCount} verified document${verifiedCount !== 1 ? "s" : ""}`}
+            </p>
+            <p className="text-center text-xs text-muted-foreground mt-1">Max loan: ${maxLoan}</p>
           </motion.div>
 
           {/* Quick Actions */}
