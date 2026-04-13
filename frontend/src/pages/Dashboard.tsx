@@ -23,6 +23,32 @@ export default function Dashboard() {
   const [actionAmount, setActionAmount] = useState("");
   const [actionRecipient, setActionRecipient] = useState("");
   const [activityTab, setActivityTab] = useState("all");
+  const [verifiedCount, setVerifiedCount] = useState(0);
+  const [realScore, setRealScore] = useState(0);
+  const [maxLoan, setMaxLoan] = useState(20);
+
+  useEffect(() => {
+    const fetchDocs = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from("ecocash_statements")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("verification_status", "verified");
+      const count = data?.length ?? 0;
+      setVerifiedCount(count);
+      // Simple score: 0 if no docs
+      if (count === 0) {
+        setRealScore(0);
+        setMaxLoan(20);
+      } else {
+        const score = Math.min(850, count * 150 + 200);
+        setRealScore(score);
+        setMaxLoan(score < 300 ? 50 : score < 500 ? 200 : score < 650 ? 500 : score < 750 ? 1500 : 5000);
+      }
+    };
+    fetchDocs();
+  }, [user]);
 
   const filteredTransactions = activityTab === "all"
     ? transactions
