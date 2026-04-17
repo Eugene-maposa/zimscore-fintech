@@ -7,6 +7,7 @@ export default defineConfig(({ mode }) => ({
   build: {
     outDir: path.resolve(__dirname, "../dist"),
     emptyOutDir: true,
+    chunkSizeWarningLimit: 1000,
   },
   server: {
     host: "::",
