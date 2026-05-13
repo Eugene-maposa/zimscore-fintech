@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Wallet, BarChart3, Users, Building2,
-  Rocket, Shield, LogOut, X, TrendingUp, Bell, Landmark, Smartphone
+  Rocket, Shield, LogOut, X, TrendingUp, Bell, Landmark, Smartphone, Briefcase
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,8 +15,9 @@ const navItems = [
   { label: "Crowdfunding", icon: Rocket, path: "/crowdfunding" },
   { label: "MFI Marketplace", icon: Landmark, path: "/mfi" },
   { label: "EcoCash Upload", icon: Smartphone, path: "/ecocash-upload" },
+  { label: "FI Portal", icon: Briefcase, path: "/fi", fiOnly: true },
   { label: "Notifications", icon: Bell, path: "/notifications" },
-  { label: "Admin", icon: Shield, path: "/admin" },
+  { label: "Admin", icon: Shield, path: "/admin", adminOnly: true },
 ];
 
 interface AppSidebarProps {
@@ -27,7 +28,8 @@ interface AppSidebarProps {
 export function AppSidebar({ open, onClose }: AppSidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut, isAdmin } = useAuth();
+  const { signOut, isAdmin, fi } = useAuth();
+  const showFI = !!fi; // show portal as soon as registered (page handles pending/rejected)
 
   const handleSignOut = async () => {
     await signOut();
@@ -62,7 +64,11 @@ export function AppSidebar({ open, onClose }: AppSidebarProps) {
 
         {/* Nav */}
         <nav className="flex-1 px-3 space-y-1">
-          {navItems.filter(item => item.path !== "/admin" || isAdmin).map((item) => {
+          {navItems.filter(item => {
+            if ((item as any).adminOnly) return isAdmin;
+            if ((item as any).fiOnly) return showFI;
+            return true;
+          }).map((item) => {
             const active = location.pathname === item.path;
             return (
               <Link
