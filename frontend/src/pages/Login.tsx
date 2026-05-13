@@ -81,6 +81,9 @@ export default function Login() {
           <p className="text-center text-sm text-muted-foreground">
             Don't have an account? <Link to="/register" className="text-primary hover:underline">Sign up</Link>
           </p>
+          <p className="text-center text-xs text-muted-foreground border-t border-border pt-3">
+            Are you a financial institution? <Link to="/fi-register" className="text-primary hover:underline">Register here</Link>
+          </p>
         </div>
       </motion.div>
     </div>

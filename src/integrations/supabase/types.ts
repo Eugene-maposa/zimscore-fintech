@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      credit_documents: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          doc_type: string
+          extracted_data: Json | null
+          file_name: string
+          file_url: string
+          fraud_indicators: Json | null
+          id: string
+          updated_at: string
+          user_id: string
+          verification_reason: string | null
+          verification_status: string
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          doc_type: string
+          extracted_data?: Json | null
+          file_name: string
+          file_url: string
+          fraud_indicators?: Json | null
+          id?: string
+          updated_at?: string
+          user_id: string
+          verification_reason?: string | null
+          verification_status?: string
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          doc_type?: string
+          extracted_data?: Json | null
+          file_name?: string
+          file_url?: string
+          fraud_indicators?: Json | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+          verification_reason?: string | null
+          verification_status?: string
+        }
+        Relationships: []
+      }
       ecocash_statements: {
         Row: {
           confidence: number | null
@@ -52,6 +97,173 @@ export type Database = {
           verification_status?: string
         }
         Relationships: []
+      }
+      financial_institutions: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          contact_email: string
+          contact_phone: string | null
+          created_at: string
+          description: string | null
+          id: string
+          institution_name: string
+          license_number: string
+          logo_url: string | null
+          rejection_reason: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          contact_email: string
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          institution_name: string
+          license_number: string
+          logo_url?: string | null
+          rejection_reason?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          contact_email?: string
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          institution_name?: string
+          license_number?: string
+          logo_url?: string | null
+          rejection_reason?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      loan_applications: {
+        Row: {
+          amount: number
+          applied_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_reason: string | null
+          fi_id: string
+          id: string
+          product_id: string | null
+          purpose: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          applied_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_reason?: string | null
+          fi_id: string
+          id?: string
+          product_id?: string | null
+          purpose?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          applied_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_reason?: string | null
+          fi_id?: string
+          id?: string
+          product_id?: string | null
+          purpose?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loan_applications_fi_id_fkey"
+            columns: ["fi_id"]
+            isOneToOne: false
+            referencedRelation: "financial_institutions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loan_applications_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "loan_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loan_products: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          fi_id: string
+          id: string
+          interest_rate: number
+          max_amount: number
+          min_amount: number
+          min_credit_score: number
+          name: string
+          requirements: string | null
+          term_months: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          fi_id: string
+          id?: string
+          interest_rate: number
+          max_amount: number
+          min_amount?: number
+          min_credit_score?: number
+          name: string
+          requirements?: string | null
+          term_months: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          fi_id?: string
+          id?: string
+          interest_rate?: number
+          max_amount?: number
+          min_amount?: number
+          min_credit_score?: number
+          name?: string
+          requirements?: string | null
+          term_months?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loan_products_fi_id_fkey"
+            columns: ["fi_id"]
+            isOneToOne: false
+            referencedRelation: "financial_institutions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -121,7 +333,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "moderator" | "user"
+      app_role: "admin" | "moderator" | "user" | "financial_institution"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -249,7 +461,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "moderator", "user"],
+      app_role: ["admin", "moderator", "user", "financial_institution"],
     },
   },
 } as const

@@ -16,17 +16,23 @@ interface Profile {
   id: string; user_id: string; full_name: string; verification_status: string; created_at: string;
   national_id_front_url: string | null; national_id_back_url: string | null; passport_photo_url: string | null;
 }
+interface FIRecord {
+  id: string; user_id: string; institution_name: string; license_number: string;
+  contact_email: string; contact_phone: string | null; description: string | null;
+  status: string; rejection_reason: string | null; created_at: string;
+}
 
 export default function AdminPortal() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [fis, setFis] = useState<FIRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewProfile, setViewProfile] = useState<Profile | null>(null);
   const [docUrls, setDocUrls] = useState<{ front?: string; back?: string; photo?: string }>({});
   const [statusFilter, setStatusFilter] = useState("all");
   const [mainTab, setMainTab] = useState("overview");
 
-  useEffect(() => { fetchProfiles(); }, []);
+  useEffect(() => { fetchProfiles(); fetchFIs(); }, []);
 
   if (!isAdmin) {
     return (
@@ -46,6 +52,22 @@ export default function AdminPortal() {
     if (error) toast.error("Failed to load profiles");
     else setProfiles(data || []);
     setLoading(false);
+  };
+
+  const fetchFIs = async () => {
+    const { data } = await supabase.from("financial_institutions").select("*").order("created_at", { ascending: false });
+    setFis((data as FIRecord[]) || []);
+  };
+
+  const decideFI = async (fi: FIRecord, status: "approved" | "rejected", reason?: string) => {
+    const { error } = await supabase.from("financial_institutions").update({
+      status, rejection_reason: status === "rejected" ? (reason || "Rejected by admin") : null,
+      approved_at: status === "approved" ? new Date().toISOString() : null,
+      approved_by: user?.id,
+    }).eq("id", fi.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`${fi.institution_name} ${status}`);
+    fetchFIs();
   };
 
   const getSignedUrl = async (path: string | null): Promise<string | undefined> => {
@@ -88,6 +110,7 @@ export default function AdminPortal() {
           <TabsList>
             <TabsTrigger value="overview">System Overview</TabsTrigger>
             <TabsTrigger value="kyc">KYC Verification</TabsTrigger>
+            <TabsTrigger value="institutions">Financial Institutions {fis.filter(f => f.status === "pending").length > 0 && <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-accent text-accent-foreground">{fis.filter(f => f.status === "pending").length}</span>}</TabsTrigger>
             <TabsTrigger value="analytics">Credit Analytics</TabsTrigger>
             <TabsTrigger value="revenue">Revenue</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
@@ -191,6 +214,58 @@ export default function AdminPortal() {
                         {profile.verification_status === "verified" && (
                           <button onClick={() => updateStatus(profile.id, "suspended")} className="p-2 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20" title="Suspend"><Ban className="w-4 h-4" /></button>
                         )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          </TabsContent>
+
+          {/* Financial Institutions Approval Queue */}
+          <TabsContent value="institutions" className="space-y-4 mt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <StatCard title="Total FIs" value={fis.length.toString()} icon={Users} />
+              <StatCard title="Approved" value={fis.filter(f => f.status === "approved").length.toString()} icon={CheckCircle} />
+              <StatCard title="Pending Review" value={fis.filter(f => f.status === "pending").length.toString()} icon={Shield} />
+            </div>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card p-6">
+              <h3 className="font-display text-lg font-semibold mb-4">Financial Institution Applications</h3>
+              {fis.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">No financial institutions registered yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {fis.map(fi => (
+                    <div key={fi.id} className="p-4 rounded-lg bg-secondary/30 border border-border">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <p className="font-semibold text-sm">{fi.institution_name}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">License: {fi.license_number} · {fi.contact_email}</p>
+                          {fi.contact_phone && <p className="text-xs text-muted-foreground">Phone: {fi.contact_phone}</p>}
+                          {fi.description && <p className="text-xs text-muted-foreground mt-1 italic">"{fi.description}"</p>}
+                          <p className="text-xs text-muted-foreground mt-1">Applied: {new Date(fi.created_at).toLocaleDateString("en-GB")}</p>
+                          {fi.rejection_reason && <p className="text-xs text-destructive mt-1">Reason: {fi.rejection_reason}</p>}
+                        </div>
+                        <div className="flex flex-col items-end gap-2">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                            fi.status === "approved" ? "bg-success/15 text-success" :
+                            fi.status === "rejected" ? "bg-destructive/15 text-destructive" :
+                            "bg-accent/15 text-accent"
+                          }`}>{fi.status}</span>
+                          {fi.status === "pending" && (
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="outline" className="text-destructive" onClick={() => {
+                                const reason = prompt("Reason for rejection (optional):");
+                                if (reason !== null) decideFI(fi, "rejected", reason);
+                              }}>
+                                <XCircle className="w-3 h-3 mr-1" /> Reject
+                              </Button>
+                              <Button size="sm" className="glow-primary" onClick={() => decideFI(fi, "approved")}>
+                                <CheckCircle className="w-3 h-3 mr-1" /> Approve
+                              </Button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
