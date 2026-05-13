@@ -14,11 +14,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
 const documentTypes = [
-  { id: "payslip", label: "Payslip", formats: "PDF / Image", icon: FileText },
-  { id: "bank_statement", label: "Bank Statement", formats: "PDF / CSV", icon: FileText },
-  { id: "ecocash", label: "EcoCash History", formats: "CSV", icon: FileText },
-  { id: "utility", label: "Utility Bill", formats: "PDF / Image", icon: FileText },
-];
+  { id: "ecocash", label: "EcoCash Statement", formats: "PDF / Image", icon: FileText },
+  { id: "bank_statement", label: "Bank Statement", formats: "PDF / Image", icon: FileText },
+  { id: "receipt", label: "Receipt / Bill", formats: "PDF / Image", icon: FileText },
+] as const;
 
 interface VerifiedStatement {
   id: string;
@@ -131,24 +130,22 @@ export default function ScorePage() {
   const [verifiedStatements, setVerifiedStatements] = useState<VerifiedStatement[]>([]);
   const [isLoadingScore, setIsLoadingScore] = useState(true);
 
-  // Fetch verified documents from DB
+  // Fetch verified documents from BOTH ecocash_statements and credit_documents
   useEffect(() => {
     const fetchVerifiedDocs = async () => {
-      if (!user) {
-        setIsLoadingScore(false);
-        return;
-      }
+      if (!user) { setIsLoadingScore(false); return; }
       try {
-        const { data, error } = await supabase
-          .from("ecocash_statements")
-          .select("id, verification_status, confidence, extracted_data, file_name, created_at")
-          .eq("user_id", user.id)
-          .eq("verification_status", "verified");
-
-        if (error) throw error;
-        setVerifiedStatements((data as VerifiedStatement[]) || []);
+        const [{ data: eco }, { data: cd }] = await Promise.all([
+          supabase.from("ecocash_statements")
+            .select("id, verification_status, confidence, extracted_data, file_name, created_at")
+            .eq("user_id", user.id).eq("verification_status", "verified"),
+          supabase.from("credit_documents")
+            .select("id, verification_status, confidence, extracted_data, file_name, created_at")
+            .eq("user_id", user.id).eq("verification_status", "verified"),
+        ]);
+        setVerifiedStatements([...(eco as VerifiedStatement[] || []), ...(cd as VerifiedStatement[] || [])]);
       } catch (err) {
-        console.error("Failed to fetch verified statements", err);
+        console.error("Failed to fetch verified docs", err);
       } finally {
         setIsLoadingScore(false);
       }
@@ -174,19 +171,61 @@ export default function ScorePage() {
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) { toast.error("File must be under 10MB"); return; }
     setUploadedDocs(prev => ({ ...prev, [docType]: file }));
-    toast.success(`${file.name} uploaded`);
+    toast.success(`${file.name} selected`);
   };
 
-  const handleProcessDocuments = () => {
-    const count = Object.values(uploadedDocs).filter(Boolean).length;
-    if (count === 0) { toast.error("Please upload at least one document"); return; }
+  const fileToBase64 = (f: File): Promise<string> => new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result as string);
+    r.onerror = reject;
+    r.readAsDataURL(f);
+  });
+
+  const handleProcessDocuments = async () => {
+    if (!user) { toast.error("Please log in"); return; }
+    const entries = Object.entries(uploadedDocs).filter(([, f]) => !!f) as [string, File][];
+    if (entries.length === 0) { toast.error("Please upload at least one document"); return; }
     setProcessing(true);
-    setTimeout(() => {
-      setProcessing(false);
-      toast.success("Documents processed via OCR. Score updated!", { description: `${count} document(s) analysed in 12 seconds` });
+    let verified = 0, rejected = 0;
+    try {
+      for (const [docType, file] of entries) {
+        try {
+          const base64 = await fileToBase64(file);
+          const { data: vData, error: vErr } = await supabase.functions.invoke("verify-credit-document", {
+            body: { imageBase64: base64, fileType: file.type, docType },
+          });
+          if (vErr) throw vErr;
+
+          // Upload to storage
+          const path = `${user.id}/${Date.now()}_${docType}_${file.name}`;
+          const { error: upErr } = await supabase.storage.from("credit-documents").upload(path, file);
+          if (upErr) throw upErr;
+
+          const status = vData.valid ? "verified" : "rejected";
+          await supabase.from("credit_documents").insert({
+            user_id: user.id, doc_type: docType, file_url: path, file_name: file.name,
+            verification_status: status, verification_reason: vData.reason,
+            confidence: vData.confidence, fraud_indicators: vData.fraud_indicators,
+            extracted_data: vData.extracted_data,
+          });
+          if (vData.valid) verified++; else rejected++;
+        } catch (err: any) {
+          console.error(`Failed to process ${docType}:`, err);
+          rejected++;
+        }
+      }
+      if (verified > 0) toast.success(`${verified} document(s) verified`, { description: rejected ? `${rejected} flagged as forged/rejected.` : "Score updated." });
+      else toast.error("All documents flagged as forged or unverifiable", { description: "AI detected fraud indicators or could not confirm authenticity." });
       setUploadOpen(false);
       setUploadedDocs({});
-    }, 3000);
+      // Refresh
+      const { data: cd } = await supabase.from("credit_documents")
+        .select("id, verification_status, confidence, extracted_data, file_name, created_at")
+        .eq("user_id", user.id).eq("verification_status", "verified");
+      setVerifiedStatements(prev => [...prev.filter(s => !cd?.find(c => c.id === s.id)), ...(cd as VerifiedStatement[] || [])]);
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const handleManualBudget = () => {
@@ -406,7 +445,7 @@ export default function ScorePage() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Upload Financial Documents</DialogTitle>
-            <DialogDescription>Upload genuine EcoCash statements, bank statements, or receipts. Fake documents will be detected and rejected by our AI verification system.</DialogDescription>
+            <DialogDescription>Each file is checked by AI for forgery — fake or edited documents will be rejected and won't count toward your score.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <div className="p-3 rounded-lg bg-secondary/30 border border-border text-sm">
@@ -438,7 +477,7 @@ export default function ScorePage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setUploadOpen(false)}>Cancel</Button>
             <Button onClick={handleProcessDocuments} disabled={processing} className="glow-primary">
-              {processing ? "Processing..." : "Process Documents"}
+              {processing ? "Verifying with AI..." : "Verify & Process"}
             </Button>
           </DialogFooter>
         </DialogContent>
